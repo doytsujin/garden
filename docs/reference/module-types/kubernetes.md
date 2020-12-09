@@ -204,8 +204,17 @@ tasks:
     # Maximum duration (in seconds) of the task's execution.
     timeout: null
 
-    # The Deployment, DaemonSet or StatefulSet that Garden should use to execute this task. If not specified, the
-    # `serviceResource` configured on the module will be used. If neither is specified, an error will be thrown.
+    # The Deployment, DaemonSet or StatefulSet that Garden should use to execute this task.
+    # If not specified, the `serviceResource` configured on the module will be used. If neither is specified,
+    # an error will be thrown.
+    #
+    # The following pod spec fields from the service resource will not be used when executing the task:
+    # * `activeDeadlineSeconds`
+    # * `ephemeralContainers`
+    # * `initContainers`
+    # * `readinessGates`
+    # * `restartPolicy`
+    # * `terminationGracePeriodSeconds`
     resource:
       # The type of Kubernetes resource to sync files to.
       kind: Deployment
@@ -260,8 +269,17 @@ tests:
     # Maximum duration (in seconds) of the test run.
     timeout: null
 
-    # The Deployment, DaemonSet or StatefulSet that Garden should use to execute this test suite. If not specified,
-    # the `serviceResource` configured on the module will be used. If neither is specified, an error will be thrown.
+    # The Deployment, DaemonSet or StatefulSet that Garden should use to execute this test suite.
+    # If not specified, the `serviceResource` configured on the module will be used. If neither is specified,
+    # an error will be thrown.
+    #
+    # The following pod spec fields from the service resource will not be used when executing the test suite:
+    # * `activeDeadlineSeconds`
+    # * `ephemeralContainers`
+    # * `initContainers`
+    # * `readinessGates`
+    # * `restartPolicy`
+    # * `terminationGracePeriodSeconds`
     resource:
       # The type of Kubernetes resource to sync files to.
       kind: Deployment
@@ -747,7 +765,17 @@ Maximum duration (in seconds) of the task's execution.
 
 [tasks](#tasks) > resource
 
-The Deployment, DaemonSet or StatefulSet that Garden should use to execute this task. If not specified, the `serviceResource` configured on the module will be used. If neither is specified, an error will be thrown.
+The Deployment, DaemonSet or StatefulSet that Garden should use to execute this task.
+If not specified, the `serviceResource` configured on the module will be used. If neither is specified,
+an error will be thrown.
+
+The following pod spec fields from the service resource will not be used when executing the task:
+* `activeDeadlineSeconds`
+* `ephemeralContainers`
+* `initContainers`
+* `readinessGates`
+* `restartPolicy`
+* `terminationGracePeriodSeconds`
 
 | Type     | Required |
 | -------- | -------- |
@@ -954,7 +982,17 @@ Maximum duration (in seconds) of the test run.
 
 [tests](#tests) > resource
 
-The Deployment, DaemonSet or StatefulSet that Garden should use to execute this test suite. If not specified, the `serviceResource` configured on the module will be used. If neither is specified, an error will be thrown.
+The Deployment, DaemonSet or StatefulSet that Garden should use to execute this test suite.
+If not specified, the `serviceResource` configured on the module will be used. If neither is specified,
+an error will be thrown.
+
+The following pod spec fields from the service resource will not be used when executing the test suite:
+* `activeDeadlineSeconds`
+* `ephemeralContainers`
+* `initContainers`
+* `readinessGates`
+* `restartPolicy`
+* `terminationGracePeriodSeconds`
 
 | Type     | Required |
 | -------- | -------- |
