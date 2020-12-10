@@ -173,15 +173,15 @@ serviceResource:
   # correctly.
   name:
 
+  # If specified, overrides the arguments for the main container when running in hot-reload mode.
+  hotReloadArgs:
+
   # The Garden module that contains the sources for the container. This needs to be specified under `serviceResource`
   # in order to enable hot-reloading, but is not necessary for tasks and tests.
   # Must be a `container` module, and for hot-reloading to work you must specify the `hotReload` field on the
   # container module.
   # Note: If you specify a module here, you don't need to specify it additionally under `build.dependencies`
-  containerModule:
-
-  # If specified, overrides the arguments for the main container when running in hot-reload mode.
-  hotReloadArgs:
+  imageModule:
 
 # Set this to true if the chart should only be built, but not deployed as a service. Use this, for example, if the
 # chart should only be used as a base for other modules.
@@ -258,15 +258,15 @@ tasks:
       # be parsed correctly.
       name:
 
+      # If specified, overrides the arguments for the main container when running in hot-reload mode.
+      hotReloadArgs:
+
       # The Garden module that contains the sources for the container. This needs to be specified under
       # `serviceResource` in order to enable hot-reloading, but is not necessary for tasks and tests.
       # Must be a `container` module, and for hot-reloading to work you must specify the `hotReload` field on the
       # container module.
       # Note: If you specify a module here, you don't need to specify it additionally under `build.dependencies`
-      containerModule:
-
-      # If specified, overrides the arguments for the main container when running in hot-reload mode.
-      hotReloadArgs:
+      imageModule:
 
 # The test suite definitions for this module.
 tests:
@@ -324,15 +324,15 @@ tests:
       # be parsed correctly.
       name:
 
+      # If specified, overrides the arguments for the main container when running in hot-reload mode.
+      hotReloadArgs:
+
       # The Garden module that contains the sources for the container. This needs to be specified under
       # `serviceResource` in order to enable hot-reloading, but is not necessary for tasks and tests.
       # Must be a `container` module, and for hot-reloading to work you must specify the `hotReload` field on the
       # container module.
       # Note: If you specify a module here, you don't need to specify it additionally under `build.dependencies`
-      containerModule:
-
-      # If specified, overrides the arguments for the main container when running in hot-reload mode.
-      hotReloadArgs:
+      imageModule:
 
 # Time in seconds to wait for Helm to complete any individual Kubernetes operation (like Jobs for hooks).
 timeout: 300
@@ -713,9 +713,7 @@ This can include a Helm template string, e.g. '{{ template "my-chart.fullname" .
 
 [serviceResource](#serviceresource) > containerModule
 
-The Garden module that contains the sources for the container. This needs to be specified under `serviceResource` in order to enable hot-reloading, but is not necessary for tasks and tests.
-Must be a `container` module, and for hot-reloading to work you must specify the `hotReload` field on the container module.
-Note: If you specify a module here, you don't need to specify it additionally under `build.dependencies`
+**DEPRECATED**. Use `imageModule` field instead.
 
 | Type     | Required |
 | -------- | -------- |
@@ -725,8 +723,6 @@ Example:
 
 ```yaml
 serviceResource:
-  ...
-  containerModule: "my-container-module"
 ```
 
 ### `serviceResource.hotReloadArgs[]`
@@ -747,6 +743,26 @@ serviceResource:
   hotReloadArgs:
     - nodemon
     - my-server.js
+```
+
+### `serviceResource.imageModule`
+
+[serviceResource](#serviceresource) > imageModule
+
+The Garden module that contains the sources for the container. This needs to be specified under `serviceResource` in order to enable hot-reloading, but is not necessary for tasks and tests.
+Must be a `container` module, and for hot-reloading to work you must specify the `hotReload` field on the container module.
+Note: If you specify a module here, you don't need to specify it additionally under `build.dependencies`
+
+| Type     | Required |
+| -------- | -------- |
+| `string` | No       |
+
+Example:
+
+```yaml
+serviceResource:
+  ...
+  imageModule: "my-container-module"
 ```
 
 ### `skipDeploy`
@@ -982,9 +998,7 @@ This can include a Helm template string, e.g. '{{ template "my-chart.fullname" .
 
 [tasks](#tasks) > [resource](#tasksresource) > containerModule
 
-The Garden module that contains the sources for the container. This needs to be specified under `serviceResource` in order to enable hot-reloading, but is not necessary for tasks and tests.
-Must be a `container` module, and for hot-reloading to work you must specify the `hotReload` field on the container module.
-Note: If you specify a module here, you don't need to specify it additionally under `build.dependencies`
+**DEPRECATED**. Use `imageModule` field instead.
 
 | Type     | Required |
 | -------- | -------- |
@@ -995,8 +1009,6 @@ Example:
 ```yaml
 tasks:
   - resource:
-      ...
-      containerModule: "my-container-module"
 ```
 
 ### `tasks[].resource.hotReloadArgs[]`
@@ -1018,6 +1030,27 @@ tasks:
       hotReloadArgs:
         - nodemon
         - my-server.js
+```
+
+### `tasks[].resource.imageModule`
+
+[tasks](#tasks) > [resource](#tasksresource) > imageModule
+
+The Garden module that contains the sources for the container. This needs to be specified under `serviceResource` in order to enable hot-reloading, but is not necessary for tasks and tests.
+Must be a `container` module, and for hot-reloading to work you must specify the `hotReload` field on the container module.
+Note: If you specify a module here, you don't need to specify it additionally under `build.dependencies`
+
+| Type     | Required |
+| -------- | -------- |
+| `string` | No       |
+
+Example:
+
+```yaml
+tasks:
+  - resource:
+      ...
+      imageModule: "my-container-module"
 ```
 
 ### `tests[]`
@@ -1224,9 +1257,7 @@ This can include a Helm template string, e.g. '{{ template "my-chart.fullname" .
 
 [tests](#tests) > [resource](#testsresource) > containerModule
 
-The Garden module that contains the sources for the container. This needs to be specified under `serviceResource` in order to enable hot-reloading, but is not necessary for tasks and tests.
-Must be a `container` module, and for hot-reloading to work you must specify the `hotReload` field on the container module.
-Note: If you specify a module here, you don't need to specify it additionally under `build.dependencies`
+**DEPRECATED**. Use `imageModule` field instead.
 
 | Type     | Required |
 | -------- | -------- |
@@ -1237,8 +1268,6 @@ Example:
 ```yaml
 tests:
   - resource:
-      ...
-      containerModule: "my-container-module"
 ```
 
 ### `tests[].resource.hotReloadArgs[]`
@@ -1260,6 +1289,27 @@ tests:
       hotReloadArgs:
         - nodemon
         - my-server.js
+```
+
+### `tests[].resource.imageModule`
+
+[tests](#tests) > [resource](#testsresource) > imageModule
+
+The Garden module that contains the sources for the container. This needs to be specified under `serviceResource` in order to enable hot-reloading, but is not necessary for tasks and tests.
+Must be a `container` module, and for hot-reloading to work you must specify the `hotReload` field on the container module.
+Note: If you specify a module here, you don't need to specify it additionally under `build.dependencies`
+
+| Type     | Required |
+| -------- | -------- |
+| `string` | No       |
+
+Example:
+
+```yaml
+tests:
+  - resource:
+      ...
+      imageModule: "my-container-module"
 ```
 
 ### `timeout`

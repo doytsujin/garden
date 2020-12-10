@@ -22,7 +22,7 @@ import {
   KubernetesTestSpec,
   KubernetesTaskSpec,
   namespaceSchema,
-  containerModuleSchema,
+  imageModuleSchema,
   hotReloadArgsSchema,
 } from "../config"
 import { ContainerModule } from "../../container/config"
@@ -75,9 +75,9 @@ export const kubernetesModuleSpecSchema = () =>
       "POSIX-style paths to YAML files to load manifests from. Each can contain multiple manifests."
     ),
     include: joiModuleIncludeDirective(dedent`
-    If neither \`include\` nor \`exclude\` is set, Garden automatically sets \`include\` to equal the
-    \`files\` directive so that only the Kubernetes manifests get included.
-  `),
+      If neither \`include\` nor \`exclude\` is set, Garden automatically sets \`include\` to equal the
+      \`files\` directive so that only the Kubernetes manifests get included.
+    `),
     namespace: namespaceSchema(),
     serviceResource: serviceResourceSchema()
       .description(
@@ -87,9 +87,13 @@ export const kubernetesModuleSpecSchema = () =>
         Garden features and commands to work.`
       )
       .keys({
-        containerModule: containerModuleSchema(),
+        containerModule: imageModuleSchema()
+          .description("**DEPRECATED**. Use the `imageModule` field instead.")
+          .meta({ deprecated: true }),
         hotReloadArgs: hotReloadArgsSchema(),
-      }),
+        imageModule: imageModuleSchema(),
+      })
+      .oxor("containerModule", "imageModule"),
     tasks: joiArray(kubernetesTaskSchema()),
     tests: joiArray(kubernetesTestSchema()),
   })
@@ -98,7 +102,13 @@ export async function configureKubernetesModule({
   moduleConfig,
 }: ConfigureModuleParams<KubernetesModule>): Promise<ConfigureModuleResult<KubernetesModule>> {
   const { serviceResource } = moduleConfig.spec
-  const sourceModuleName = serviceResource ? serviceResource.containerModule : undefined
+
+  // DEPRECATED: Migrate deprecated containerModule field
+  if (serviceResource?.containerModule) {
+    serviceResource.imageModule = serviceResource.containerModule
+  }
+
+  const sourceModuleName = serviceResource ? serviceResource.imageModule : undefined
 
   moduleConfig.serviceConfigs = [
     {
@@ -117,22 +127,42 @@ export async function configureKubernetesModule({
     moduleConfig.include = moduleConfig.spec.files
   }
 
-  moduleConfig.taskConfigs = moduleConfig.spec.tasks.map((t) => ({
-    name: t.name,
-    cacheResult: t.cacheResult,
-    dependencies: t.dependencies,
-    disabled: t.disabled,
-    spec: t,
-    timeout: t.timeout,
-  }))
+  moduleConfig.taskConfigs = moduleConfig.spec.tasks.map((spec) => {
+    if (spec.resource?.containerModule) {
+      spec.resource.imageModule = spec.resource.containerModule
+    }
 
-  moduleConfig.testConfigs = moduleConfig.spec.tests.map((t) => ({
-    name: t.name,
-    dependencies: t.dependencies,
-    disabled: t.disabled,
-    spec: t,
-    timeout: t.timeout,
-  }))
+    if (spec.resource?.imageModule) {
+      moduleConfig.build.dependencies.push({ name: spec.resource.imageModule, copy: [] })
+    }
+
+    return {
+      name: spec.name,
+      cacheResult: spec.cacheResult,
+      dependencies: spec.dependencies,
+      disabled: spec.disabled,
+      spec,
+      timeout: spec.timeout,
+    }
+  })
+
+  moduleConfig.testConfigs = moduleConfig.spec.tests.map((spec) => {
+    if (spec.resource?.containerModule) {
+      spec.resource.imageModule = spec.resource.containerModule
+    }
+
+    if (spec.resource?.imageModule) {
+      moduleConfig.build.dependencies.push({ name: spec.resource.imageModule, copy: [] })
+    }
+
+    return {
+      name: spec.name,
+      dependencies: spec.dependencies,
+      disabled: spec.disabled,
+      spec,
+      timeout: spec.timeout,
+    }
+  })
 
   return { moduleConfig }
 }

@@ -31,7 +31,7 @@ import {
   KubernetesTestSpec,
   KubernetesTaskSpec,
   namespaceSchema,
-  containerModuleSchema,
+  imageModuleSchema,
   hotReloadArgsSchema,
 } from "../config"
 import { posix } from "path"
@@ -80,19 +80,24 @@ export const helmModuleOutputsSchema = () =>
   })
 
 const helmServiceResourceSchema = () =>
-  serviceResourceSchema().keys({
-    name: joi.string().description(
-      deline`The name of the resource to sync to. If the chart contains a single resource of the specified Kind,
+  serviceResourceSchema()
+    .keys({
+      name: joi.string().description(
+        deline`The name of the resource to sync to. If the chart contains a single resource of the specified Kind,
         this can be omitted.
 
         This can include a Helm template string, e.g. '{{ template "my-chart.fullname" . }}'.
         This allows you to easily match the dynamic names given by Helm. In most cases you should copy this
         directly from the template in question in order to match it. Note that you may need to add single quotes around
         the string for the YAML to be parsed correctly.`
-    ),
-    containerModule: containerModuleSchema(),
-    hotReloadArgs: hotReloadArgsSchema(),
-  })
+      ),
+      containerModule: imageModuleSchema()
+        .description("**DEPRECATED**. Use `imageModule` field instead.")
+        .meta({ deprecated: true }),
+      hotReloadArgs: hotReloadArgsSchema(),
+      imageModule: imageModuleSchema(),
+    })
+    .oxor("containerModule", "imageModule")
 
 const helmTaskSchema = () =>
   kubernetesTaskSchema().keys({
@@ -208,7 +213,12 @@ export async function configureHelmModule({
 }: ConfigureModuleParams<HelmModule>): Promise<ConfigureModuleResult<HelmModule>> {
   const { base, chartPath, dependencies, serviceResource, skipDeploy, tasks, tests } = moduleConfig.spec
 
-  const sourceModuleName = serviceResource ? serviceResource.containerModule : undefined
+  // DEPRECATED: Migrate deprecated containerModule field
+  if (serviceResource?.containerModule) {
+    serviceResource.imageModule = serviceResource.containerModule
+  }
+
+  const sourceModuleName = serviceResource ? serviceResource.imageModule : undefined
 
   if (!skipDeploy) {
     moduleConfig.serviceConfigs = [
@@ -244,8 +254,12 @@ export async function configureHelmModule({
   }
 
   moduleConfig.taskConfigs = tasks.map((spec) => {
-    if (spec.resource && spec.resource.containerModule) {
-      moduleConfig.build.dependencies.push({ name: spec.resource.containerModule, copy: [] })
+    if (spec.resource?.containerModule) {
+      spec.resource.imageModule = spec.resource.containerModule
+    }
+
+    if (spec.resource?.imageModule) {
+      moduleConfig.build.dependencies.push({ name: spec.resource.imageModule, copy: [] })
     }
 
     return {
@@ -259,8 +273,12 @@ export async function configureHelmModule({
   })
 
   moduleConfig.testConfigs = tests.map((spec) => {
-    if (spec.resource && spec.resource.containerModule) {
-      moduleConfig.build.dependencies.push({ name: spec.resource.containerModule, copy: [] })
+    if (spec.resource?.containerModule) {
+      spec.resource.imageModule = spec.resource.containerModule
+    }
+
+    if (spec.resource?.imageModule) {
+      moduleConfig.build.dependencies.push({ name: spec.resource.imageModule, copy: [] })
     }
 
     return {
