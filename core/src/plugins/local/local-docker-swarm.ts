@@ -46,7 +46,7 @@ export const gardenPlugin = createGardenPlugin({
 
           log.info({ section: service.name, msg: `Deploying version ${versionString}` })
 
-          const identifier = containerHelpers.getLocalImageId(module, module.version)
+          const identifier = module.outputs["local-image-id"]
           const ports = service.spec.ports.map((p) => {
             const port: any = {
               Protocol: p.protocol ? p.protocol.toLowerCase() : "tcp",

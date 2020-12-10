@@ -100,7 +100,7 @@ const buildStatusHandlers: { [mode in ContainerBuildMode]: BuildStatusHandler } 
 
       return { ready: res.code === 0 }
     } else if (k8sCtx.provider.config.clusterType === "microk8s") {
-      const localId = containerHelpers.getLocalImageId(module, module.version)
+      const localId = module.outputs["local-image-id"]
       return getMicrok8sImageStatus(localId)
     } else {
       return getContainerBuildStatus({ ...params, ctx: { ...ctx, provider: ctx.provider.dependencies.container } })
@@ -159,7 +159,7 @@ const buildStatusHandlers: { [mode in ContainerBuildMode]: BuildStatusHandler } 
       throw new InternalError(`Expected configured deploymentRegistry for remote build`, { config: provider.config })
     }
 
-    const remoteId = containerHelpers.getDeploymentImageId(module, module.version, deploymentRegistry)
+    const remoteId = module.outputs["deployment-image-id"]
     const inClusterRegistry = deploymentRegistry?.hostname === inClusterRegistryHostname
     const skopeoCommand = ["skopeo", "--command-timeout=30s", "inspect", "--raw"]
     if (inClusterRegistry) {
@@ -208,7 +208,7 @@ const localBuild: BuildHandler = async (params) => {
     if (provider.config.clusterType === "kind") {
       await loadImageToKind(buildResult, provider.config)
     } else if (provider.config.clusterType === "microk8s") {
-      const imageId = containerHelpers.getLocalImageId(module, module.version)
+      const imageId = module.outputs["local-image-id"]
       await loadImageToMicrok8s({ module, imageId, log, ctx })
     }
     return buildResult
@@ -218,8 +218,8 @@ const localBuild: BuildHandler = async (params) => {
     return buildResult
   }
 
-  const localId = containerHelpers.getLocalImageId(module, module.version)
-  const remoteId = containerHelpers.getDeploymentImageId(module, module.version, ctx.provider.config.deploymentRegistry)
+  const localId = module.outputs["local-image-id"]
+  const remoteId = module.outputs["deployment-image-id"]
 
   log.setState({ msg: `Pushing image ${remoteId} to cluster...` })
 
@@ -285,12 +285,8 @@ const remoteBuild: BuildHandler = async (params) => {
     minTimeout: 500,
   })
 
-  const localId = containerHelpers.getLocalImageId(module, module.version)
-  const deploymentImageId = containerHelpers.getDeploymentImageId(
-    module,
-    module.version,
-    provider.config.deploymentRegistry
-  )
+  const localId = module.outputs["local-image-id"]
+  const deploymentImageId = module.outputs["deployment-image-id"]
   const dockerfile = module.spec.dockerfile || "Dockerfile"
 
   // Because we're syncing to a shared volume, we need to scope by a unique ID
@@ -666,7 +662,7 @@ async function runKaniko({
 }
 
 async function getManifestInspectArgs(module: ContainerModule, deploymentRegistry: ContainerRegistryConfig) {
-  const remoteId = containerHelpers.getDeploymentImageId(module, module.version, deploymentRegistry)
+  const remoteId = module.outputs["deployment-image-id"]
 
   const dockerArgs = ["manifest", "inspect", remoteId]
   if (isLocalHostname(deploymentRegistry.hostname)) {
