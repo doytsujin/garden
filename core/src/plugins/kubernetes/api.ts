@@ -28,6 +28,7 @@ import {
   V1Status,
   Exec,
   Attach,
+  V1Deployment,
 } from "@kubernetes/client-node"
 import AsyncLock = require("async-lock")
 import request = require("request-promise")
@@ -103,8 +104,16 @@ const crudMap = {
     group: "core",
     read: "readNamespacedSecret",
     create: "createNamespacedSecret",
-    patch: "patchNamespacedSecret",
+    replace: "replaceNamespacedSecret",
     delete: "deleteNamespacedSecret",
+  },
+  Deployment: {
+    cls: new V1Deployment(),
+    group: "apps",
+    read: "readNamespacedDeployment",
+    create: "createNamespacedDeployment",
+    replace: "replaceNamespacedDeployment",
+    delete: "deleteNamespacedDeployment",
   },
 }
 
@@ -321,6 +330,9 @@ export class KubeApi {
     }
   }
 
+  /**
+   * Given a manifest, attempt to read the matching resource from the cluster.
+   */
   async readBySpec({ log, namespace, manifest }: { log: LogEntry; namespace: string; manifest: KubernetesResource }) {
     log.silly(`Fetching Kubernetes resource ${manifest.apiVersion}/${manifest.kind}/${manifest.metadata.name}`)
 
@@ -328,6 +340,22 @@ export class KubeApi {
 
     const res = await this.request({ log, path: apiPath })
     return res.body
+  }
+
+  /**
+   * Same as readBySpec() but returns null if the resource is missing.
+   */
+  async readOrNull(params: { log: LogEntry; namespace: string; manifest: KubernetesResource }) {
+    try {
+      const resource = await this.readBySpec(params)
+      return resource
+    } catch (err) {
+      if (err.statusCode === 404) {
+        return null
+      } else {
+        throw err
+      }
+    }
   }
 
   async listResources<T extends KubernetesResource>({
@@ -483,7 +511,7 @@ export class KubeApi {
 
     try {
       await api[crudMap[kind].read](name, namespace)
-      await api[crudMap[kind].patch](name, namespace, obj)
+      await api[crudMap[kind].replace](name, namespace, obj)
       log.debug(`Patched ${kind} ${namespace}/${name}`)
     } catch (err) {
       if (err.statusCode === 404) {
@@ -493,7 +521,7 @@ export class KubeApi {
         } catch (err) {
           if (err.statusCode === 409) {
             log.debug(`Patched ${kind} ${namespace}/${name}`)
-            await api[crudMap[kind].patch](name, namespace, obj)
+            await api[crudMap[kind].replace](name, namespace, obj)
           } else {
             throw err
           }

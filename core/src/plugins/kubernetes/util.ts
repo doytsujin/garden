@@ -17,7 +17,7 @@ import { KubernetesResource, KubernetesWorkload, KubernetesPod, KubernetesServer
 import { splitLast, serializeValues, findByName } from "../../util/util"
 import { KubeApi, KubernetesError } from "./api"
 import { gardenAnnotationKey, base64, deline, stableStringify } from "../../util/string"
-import { MAX_CONFIGMAP_DATA_SIZE, dockerAuthSecretName, dockerAuthSecretKey } from "./constants"
+import { MAX_CONFIGMAP_DATA_SIZE, dockerAuthSecretName, dockerAuthSecretKey, k8sUtilImageName } from "./constants"
 import { ContainerEnvVars } from "../container/config"
 import { ConfigurationError, PluginError } from "../../exceptions"
 import { ServiceResourceSpec, KubernetesProvider } from "./config"
@@ -29,7 +29,7 @@ import { getChartPath, renderHelmTemplateString } from "./helm/common"
 import { HotReloadableResource } from "./hot-reload/hot-reload"
 import { ProviderMap } from "../../config/provider"
 
-export const skopeoImage = "gardendev/skopeo:1.41.0-1"
+const skopeoImage = "gardendev/skopeo:1.41.0-1"
 
 const STATIC_LABEL_REGEX = /[0-9]/g
 export const workloadTypes = ["Deployment", "DaemonSet", "ReplicaSet", "StatefulSet"]
@@ -187,8 +187,8 @@ export async function getPods(
     })
     .filter(
       (pod) =>
-        // Filter out failed pods
-        !(pod.status && pod.status.phase === "Failed") &&
+        // Filter out failed and terminating pods
+        !(pod.status && (pod.status.phase === "Failed" || pod.status.phase === "Terminating")) &&
         // Filter out evicted pods
         !(pod.status && pod.status.reason && pod.status.reason.includes("Evicted"))
     )
@@ -405,11 +405,11 @@ export async function getDeploymentPod({
   deploymentName: string
   namespace: string
 }) {
-  const status = await api.apps.readNamespacedDeployment(deploymentName, namespace)
-  const pods = await getPods(api, namespace, status.spec.selector?.matchLabels || {})
+  const resource = await api.apps.readNamespacedDeployment(deploymentName, namespace)
+  const pods = await getWorkloadPods(api, namespace, resource)
   const pod = sample(pods)
   if (!pod) {
-    throw new PluginError(`Could not a running pod in a deployment: ${deploymentName}`, {
+    throw new PluginError(`Could not find a running pod in deployment ${deploymentName}`, {
       deploymentName,
       namespace,
     })
